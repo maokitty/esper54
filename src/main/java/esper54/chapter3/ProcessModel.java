@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by liwangchun on 16/10/29.
+ * todo 这里只考虑了time_batch 加上time考虑
  */
 public class ProcessModel {
     public static void main(String[] args) {

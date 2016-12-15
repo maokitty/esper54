@@ -11,4 +11,4 @@ getUnderlying 获取正在处理事件的类型，如果select用的是通配符
               对于joins或者select语句中包含表达式，那么返回的是java.util.map
 getEventType
 
-3:
+3:time与time_batch区别.time只要有事件进去，就会触发listener;time_batch只有时间到了才会将事件统一触发listener,再经过相同的时间触发listener old event

@@ -1,0 +1,4 @@
+1:window和table的区别
+  window更适合于多个statements之间共享数据；table适合存储聚合结果或者是通过主键生成
+2:window
+  创建的时候window里面没有数据，数据必须通过statement执行insert才能流入。如果创建window的statement被停止或者销毁

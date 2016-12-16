@@ -4,7 +4,6 @@ import com.espertech.esper.client.*;
 import esper54.Util.CommonListener;
 import esper54.Util.SchemaCommonListener;
 import esper54.Util.TimeUtil;
-import esper54.chapter6.WindowCommonListener;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,7 +1,7 @@
 1:context将时间分成多个集合[context partition],每个context之间相互独立，有自己的声明周期。一个context可以被多个statement共享，如果statement没有声明
-  context,esper会给它分配一个context paartition,起生命周期同statement一样
+  context,esper会给它分配一个context partition,起生命周期同statement一样；context支持高并发，理论上最高的并发度是2^31-1来处理单个epl
 2:context创建不会处理任何逻辑，直到属于他的statemnt创建或者启动，如果所有的statments都被销毁了，那么context再度失效，直至下次激活。激活的
-  context本身产生的statement不会有任何结果输出
+  context本身产生的statement不会有任何结果输出，只要有一个对应的statement没有销毁，context都会生效
 3:一个context里面不能存在两个一样的事件流，如果事件属性不存在也是不能使用；声明多个流的同时，每个流的属性类型必须一致
 4:context partition方式有如下两种：
   1：context自身属性;

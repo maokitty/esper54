@@ -16,9 +16,10 @@ public class windowModel {
     public static void main(String[] args) {
         EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment613(provider.getEPAdministrator(),provider.getEPRuntime());
-        segment6212(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment6212(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment66(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment68(provider.getEPAdministrator(), provider.getEPRuntime());
+        segment641(provider.getEPAdministrator(), provider.getEPRuntime());
 
     }
 
@@ -35,7 +36,7 @@ public class windowModel {
         mergeStatement.addListener(new MergeCommonListener());
         Map<String,Object> orderSchema1 = getOrderSchema("1","1",10.01,1,false);
         Map<String,Object> orderSchema2 = getOrderSchema("2","1",10.01,1,false);
-        Map<String,Object> orderSchema3 = getOrderSchema("3","2",10.01,1,false);
+        Map<String,Object> orderSchema3 = getOrderSchema("3", "2", 10.01, 1, false);
         runtime.sendEvent(orderSchema1,"OrderEvent");
         runtime.sendEvent(orderSchema2,"OrderEvent");
         runtime.sendEvent(orderSchema3,"OrderEvent");
@@ -69,6 +70,28 @@ public class windowModel {
     }
 
     /**
+     * 一次性查询：触发事件到达或者模式匹配
+     * 他会获取整个event_type中符合的数据
+     * note table使用iterator 获取不到on select返回的结果
+     * @param admin
+     * @param runtime
+     */
+    public static void segment641(EPAdministrator admin,EPRuntime runtime){
+        admin.createEPL("create window OrdersNamedWindow.win:time(30 sec)(orderId long,cosumerName string,volume long,price double,symbol string)");
+        admin.createEPL("insert into OrdersNamedWindow select orderId,cosumerName,volume,price,symbol from `esper54.chapter6.Order`");
+        admin.createEPL("on OrdersNamedWindow as trig select onw.symbol,sum(onw.volume) from OrdersNamedWindow as onw where onw.symbol = trig.symbol ").addListener(new CommonListener());
+        Order order0=getOrder("maokitty", 1, 20, "mao", 1);
+        runtime.sendEvent(order0);
+        Order order1=getOrder("maokitty1",2,20,"mao",-1);
+        runtime.sendEvent(order1);
+        TimeUtil.sleepSec(1);
+        Order order2=getOrder("maokitty1",3,200,"mao",-1);
+        runtime.sendEvent(order2);
+        Order order3=getOrder("maokitty1",3,200,"mao",1);
+        runtime.sendEvent(order3);
+    }
+
+    /**
      * 窗口中使用schema当做eventtype,在插入数据的时候，新建对象使用new{}
      * todo 语句insert into SecurityEvent select new{name=datas.name,roles=datas.roles} from SecurityData as datas 和
      *      insert into SecurityEvent select new{name=datas.name,roles=datas.roles} as secData from SecurityData as datas 输出不一样
@@ -82,7 +105,8 @@ public class windowModel {
         admin.createEPL(securityEventWindow);
 //        String selectWindowEpl="select irstream ipAddress,userId,secData,historySecData from SecurityEvent";
         String selectWindowEpl="select irstream secData from SecurityEvent";
-        admin.createEPL(selectWindowEpl).addListener(new SchemaCommonListener());;
+        admin.createEPL(selectWindowEpl).addListener(new SchemaCommonListener());
+        ;
         admin.createEPL("insert into SecurityEvent select new{name=datas.name,roles=datas.roles} from SecurityData as datas");
         Object[] securityData0=new Object[]{"maokitty0",new String[]{"user"}};
         Object[] securityData1=new Object[]{"maokitty1",new String[]{"user","admin"}};

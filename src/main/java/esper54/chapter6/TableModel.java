@@ -21,19 +21,34 @@ public class TableModel {
 
     /**
      * 使用这种表达式，必须table中必须有primary key，查询的时候，主键没有找到会返回null
+     * 对于聚合函数必须用into table不能用insert into
      * @param admin
      * @param runtime
      */
 
     public static void segment633(EPAdministrator admin, EPRuntime runtime) {
-        admin.createEPL("create schema FirewallEvent as(`from` string,to string)");
+        admin.createEPL("create schema FirewallEvent (`from` string,to string)");
         admin.createEPL("create table InstrusionCountTable (" +
                 "fromAddress string primary key," +
                 "toAddress string primary key," +
                 "countIntrusion10Sec count(*))");
         //容易出现主键冲突，使用on-merge比较好[segment68]
         admin.createEPL("insert into InstrusionCountTable select `from` as fromAddress,to as toAddress from FirewallEvent");
-        admin.createEPL("insert into InstrusionCountTable select count(*) as countIntrusion10Sec from FirewallEvent.win:time(60) group by to,`from`");
+        admin.createEPL("into table InstrusionCountTable select count(*) as countIntrusion10Sec from FirewallEvent.win:time(60) group by `from`,to");
+        admin.createEPL("select InstrusionCountTable[`from`,to].countIntrusion10Sec from FirewallEvent").addListener(new CommonListener());
+        Map<String,Object> firewallMap=getFirewallEvent("10.4.245.12", "10.4.245.16");
+        runtime.sendEvent(firewallMap,"FirewallEvent");
+    }
+
+  public static void segment635(EPAdministrator admin, EPRuntime runtime) {
+        admin.createEPL("create schema FirewallEvent (`from` string,to string)");
+        admin.createEPL("create table InstrusionCountTable (" +
+                "fromAddress string primary key," +
+                "toAddress string primary key," +
+                "countIntrusion10Sec count(*))");
+        //容易出现主键冲突，使用on-merge比较好[segment68]
+        admin.createEPL("insert into InstrusionCountTable select `from` as fromAddress,to as toAddress from FirewallEvent");
+        admin.createEPL("into table InstrusionCountTable select count(*) as countIntrusion10Sec from FirewallEvent.win:time(60) group by `from`,to");
         admin.createEPL("select InstrusionCountTable[`from`,to].countIntrusion10Sec from FirewallEvent").addListener(new CommonListener());
         Map<String,Object> firewallMap=getFirewallEvent("10.4.245.12", "10.4.245.16");
         runtime.sendEvent(firewallMap,"FirewallEvent");

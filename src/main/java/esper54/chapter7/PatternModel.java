@@ -143,7 +143,7 @@ public class PatternModel {
     }
 
     /**
-     * 固定时间之后才触发
+     *
      * @param admin
      * @param runtime
      */

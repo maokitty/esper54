@@ -3,6 +3,9 @@
 2:context创建不会处理任何逻辑，直到属于他的statemnt创建或者启动，如果所有的statments都被销毁了，那么context再度失效，直至下次激活。激活的
   context本身产生的statement不会有任何结果输出，只要有一个对应的statement没有销毁，context都会生效
 3:一个context里面不能存在两个一样的事件流，如果事件属性不存在也是不能使用；声明多个流的同时，每个流的属性类型必须一致
+
+事件AEvent非Context B 创建的事件，那么Aevent会影响所有的Context B
+
 4:context partition方式有如下两种：
   1：context自身属性;
   2：通过键来分片:

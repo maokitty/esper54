@@ -9,7 +9,6 @@ import com.espertech.esper.client.UpdateListener;
  */
 public class CommonListener implements UpdateListener {
     public void update(EventBean[] newEvents, EventBean[] oldEvents) {
-        System.out.println("newEvents:"+newEvents+";    oldEvents:"+oldEvents);
         if (newEvents!=null){
             System.out.println("           batch new events");
             soutEventMessage(newEvents);

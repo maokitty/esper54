@@ -15,3 +15,15 @@
 14:注解区分大小写 todo check注解可以用来干嘛
 15:lambda表达式 =>(->等效)左边代表变量，右边代表表达式，使用的时候通过 表达式名字([参数]) 调用，没有参数括号可以不要，表达式本身可以是epl语句
 16:istream默认是这种模式，listener通过newEvents接受，oldEvent永远是null;rstream,listener通过newEvents接受；irstream则是各自接受
+17:output
+     all:默认设置，表示一批数据都要输出
+     first:批量数据中只有第一个事件输出，即一段时间间隔或者一定量数据的都匹配，只输出第一个，等批量满足或者时间过了，再重新开始
+     last:对于一段时间或者一定个数的事件，只输出最后一个
+     snapshot:一般用于无边界的流或者输出当前聚合的结果。对于全部汇总并且没有用group的statement,它只会输出1行当前的聚合结果；对于aggregated没有用group，statement用了
+              group，或者statement没有用聚合，如果事件是放在window后者table里面，那么每个事件都会输出一样，如果没有用window或者join结果没有rows产生，那么不会有输出;
+              对于有聚合又有group，如果是单个流并且没有指定window,输出所有组的聚合结果，对于用了聚合和分组的statement【todo 翻译不好】
+              For fully aggregated and un‐grouped statements, output snapshot outputs a single row with current aggregation value(s).
+              For aggregated ungrouped and grouped statements, as well as for unaggregated statements, output snapshot considers events held by the data window and outputs a row for each event. If the statement speci􏰀es no data window or a join results in no rows, the output is no rows.
+              For fully aggregated and grouped statements that select from a single stream (or pattern, non‐joining) and that do not specify a data window, the engine outputs current aggregation results for all groups. For fully aggregated and grouped statements with a join and/or data windows the output consists of aggregation values according to events held in the data window (single stream) or that are join results (join).
+              When the from‐clause lists only tables, use output snapshot to output table contents.
+     after:当after后跟的时间或者事件数量满足之后，才会触发output其它条件

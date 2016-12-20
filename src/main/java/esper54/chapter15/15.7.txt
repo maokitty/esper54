@@ -1,0 +1,37 @@
+Engine线程与并发
+
+ Esper中每个engine实例都是互相独立的单元。应用中同一个jvm可以实现多个engin实例，每个engine实例可共用一个或者多个配置，一个engine可共
+享多个statements[使用window]
+
+ 默认配置下，engine实现多线程处理事件取决于应用自身的编码实现。所有的事件处理都发生在应用自身的线程回调栈中。（此时，除非应用依赖于默认的时间处理
+，那么这是唯一的engin处理线程，否者esper不会有任何内置线程）每个engine都会内置一个时间线程，默认时间间隔是100毫秒。对于statement的listener
+engine默认保证给listener的顺序就是statement产生数据的顺序（可通过configuration来关闭），另外多线程环境下，当某个statement的结果通过
+insert into语句送到另一个statement中，esper会保证原有stetement触发insert语句的顺序（可通过configuration来关闭）
+
+ 默认配置下，同一个application的线程触发sendEvent方法也会处理整个事件，并把结果输出给listener或者subscribers
+  入站线程对列：engine维护的一个出路事件过程的线程池。通过sendevent方法send事件不会产生阻塞
+     入站线程:engine把入站事件放到队列里面由engine自身管理的线程来处理事件；
+       传送用用自身的线程：他使用EPRuntime或者EventSender的sendEvent方法。engine收到后将其送到队列中，使得应用线程来自己消费
+       Event通过route方法sent的事件不会放在队列中，而被相同的执行此route的线程消费
+
+  出站线程队列:将事件送给listener或者subscriber，listener或者subscriber内部处理慢或者有阻塞不会阻塞事件处理
+     出站线程:用来将出站的事件放到一个队列里面(如果不允许outbound-threading,不能用route方法来发送事件)
+
+  定时器执行线程:提供以时间为基础的执行方式
+     定时线程：处理时间维度的任务
+
+  路由执行线程:对通过sendEvent方法send的事件做识别和预处理（由engine处理的线程来做真正的处理），,并使处理线程能够按照到达的顺序执行事件
+   （a pool of engine‐managed threads handles the actual processing of the event for each statement, pushing threading to the level of each statement for event‐arrival‐based execution.）
+      路由线程：将事件交于其它线程而非发起事件的线程处理
+
+ engine实例第一次被获取的时候，会初始化为后台进程，通过destroy方法来销毁的时候停止(通过initialize方法初始化engine会停止老的线程，启动新的线程)
+
+ EPServiceProviderSPI继承EPServiceProvider，可用来管理engine-level的队列和线程池
+
+ 处理顺序
+   默认情况下，engine不保证多个statement以某种特定的顺序执行，除非使用 @Priority
+
+
+
+
+

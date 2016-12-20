@@ -1,9 +1,13 @@
 package esper54.chapter15;
 
 import com.espertech.esper.client.*;
+import com.espertech.esper.core.service.EPServiceProviderSPI;
+import com.espertech.esper.core.thread.ThreadingService;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by liwangchun on 16/12/6.
@@ -12,7 +16,8 @@ public class APIReference {
     public static void main(String[] args) {
         EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment155(provider.getEPAdministrator(), provider.getEPRuntime());
-        segment1535(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment1535(provider.getEPAdministrator(), provider.getEPRuntime());
+        segment15715(provider);
     }
 
     /**
@@ -76,6 +81,26 @@ public class APIReference {
         //unsafe part
         double averagePrice = (Double) statement.iterator().next().get("avgPrice");
         System.out.println("avg:"+averagePrice);
+    }
+
+    /**
+     * 获取默认的线程处理对列
+     * todo 返回结果都是null
+     * @param epService
+     */
+    public static void segment15715(EPServiceProvider epService){
+        try{
+            EPServiceProviderSPI spi = (EPServiceProviderSPI) epService;
+            ThreadingService threadingService=spi.getThreadingService();
+            BlockingQueue inQueue=threadingService.getInboundQueue();
+            BlockingQueue outQueue=threadingService.getOutboundQueue();
+            BlockingQueue timeQueue=threadingService.getTimerQueue();
+            BlockingQueue routeQueue=threadingService.getRouteQueue();
+            ThreadPoolExecutor threadpool = threadingService.getInboundThreadPool();
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     private static Map<String,Object> getOrderEvent(String orderId,double price){

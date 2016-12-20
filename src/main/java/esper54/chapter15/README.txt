@@ -10,3 +10,4 @@
    B:订阅，订阅的类最多一个，效率最高，默认使用update方法，可以指定方法名来执行
    C:需要statement的结果，实现EPStatement的safeIterator【适于多线程处理】 和 iterator【线程不安全】，有order by语句则按照order by的顺序来，否则按照原窗口来
    3者可以任意组合，如果同时有订阅和注册监听器，那么订阅的类会最先得到结果。
+

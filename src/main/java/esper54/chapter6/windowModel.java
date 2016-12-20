@@ -2,6 +2,7 @@ package esper54.chapter6;
 
 import com.espertech.esper.client.*;
 import esper54.Util.*;
+import esper54.domain.Order;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,10 +50,10 @@ public class windowModel {
      */
     public static void segment66(EPAdministrator admin,EPRuntime runtime){
         admin.createEPL("create window OrdersNamedWindow.win:time(30 sec)(orderId long,cosumerName string,volume long,price double,symbol string)");
-        admin.createEPL("insert into OrdersNamedWindow select orderId,cosumerName,volume,price,symbol from `esper54.chapter6.Order`");
+        admin.createEPL("insert into OrdersNamedWindow select orderId,cosumerName,volume,price,symbol from `esper54.domain.Order`");
         EPStatement statementWin=admin.createEPL("select * from OrdersNamedWindow");
         statementWin.addListener(new WindowCommonListener());
-        String opUpdateEpl = "on `esper54.chapter6.Order`(volume>0) as myNewOrders " +
+        String opUpdateEpl = "on `esper54.domain.Order`(volume>0) as myNewOrders " +
                     "update OrdersNamedWindow as myNamedWindow " +
                     "set price = myNewOrders.price " +
                     "where myNamedWindow.symbol = myNewOrders.symbol";
@@ -78,7 +79,7 @@ public class windowModel {
      */
     public static void segment641(EPAdministrator admin,EPRuntime runtime){
         admin.createEPL("create window OrdersNamedWindow.win:time(30 sec)(orderId long,cosumerName string,volume long,price double,symbol string)");
-        admin.createEPL("insert into OrdersNamedWindow select orderId,cosumerName,volume,price,symbol from `esper54.chapter6.Order`");
+        admin.createEPL("insert into OrdersNamedWindow select orderId,cosumerName,volume,price,symbol from `esper54.domain.Order`");
         admin.createEPL("on OrdersNamedWindow as trig select onw.symbol,sum(onw.volume) from OrdersNamedWindow as onw where onw.symbol = trig.symbol ").addListener(new CommonListener());
         Order order0=getOrder("maokitty", 1, 20, "mao", 1);
         runtime.sendEvent(order0);

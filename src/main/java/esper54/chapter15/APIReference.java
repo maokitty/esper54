@@ -3,6 +3,12 @@ package esper54.chapter15;
 import com.espertech.esper.client.*;
 import com.espertech.esper.core.service.EPServiceProviderSPI;
 import com.espertech.esper.core.thread.ThreadingService;
+import esper54.Util.TimeUtil;
+import esper54.domain.Order;
+import esper54.domain.OrderHistory;
+import esper54.subscriber.DefaultOrderEvent;
+import esper54.subscriber.MultiOrderEvent;
+import esper54.subscriber.OrderEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +23,12 @@ public class APIReference {
         EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment155(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment1535(provider.getEPAdministrator(), provider.getEPRuntime());
-        segment15715(provider);
+//        segment15715(provider);
+//        segment15331(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment153311(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment153312(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment153314(provider.getEPAdministrator(), provider.getEPRuntime());
+        segment153321(provider.getEPAdministrator(), provider.getEPRuntime());
     }
 
     /**
@@ -43,6 +54,52 @@ public class APIReference {
         for (EventBean row:result.getArray()){
             System.out.println(row.getUnderlying());
         }
+    }
+
+    /**
+     * subscriber相对listener的优势:
+     * 1:性能高，查询结果直接传送给订阅的方法，不需要中间对象
+     * 2:订阅者接收强类型的参数，订阅者的代码更简单
+     * note 自定义的方法参数顺序和类型必须和select语句中的保持一致【遵循java标准】
+     * @param admin
+     * @param runtime
+     */
+    public static void segment15331(EPAdministrator admin,EPRuntime runtime){
+        EPStatement statement=admin.createEPL("select orderId,price ,count(*) from `esper54.domain.Order`");
+        statement.setSubscriber(new OrderEvent(),"orderIn");
+        runtime.sendEvent(new Order(1,"maokitty",1,2.0,"mao"));
+    }
+
+    public static void segment153311(EPAdministrator admin,EPRuntime runtime){
+        EPStatement statement=admin.createEPL("select *,count(*) from `esper54.domain.Order`.win:time(1 sec) o,`esper54.domain.OrderHistory`.win:time(1 sec) ");
+        statement.setSubscriber(new OrderEvent(),"orderAndHistoryJoin");
+        runtime.sendEvent(new Order(1, "maokitty", 1, 2.0, "mao"));
+        runtime.sendEvent(new OrderHistory("maokittyHistory", 1));
+        runtime.sendEvent(new OrderHistory("maokittyHistory2",2));
+    }
+
+    public static void segment153312(EPAdministrator admin,EPRuntime runtime){
+        admin.createEPL("create schema orderEvent(orderId long)");
+        EPStatement statement=admin.createEPL("select *  from  orderEvent");
+        statement.setSubscriber(new OrderEvent(), "orderMap");
+        Map map = new HashMap();
+        map.put("orderId", 1);
+        runtime.sendEvent(map,"orderEvent");
+    }
+
+    public static void segment153314(EPAdministrator admin,EPRuntime runtime){
+        EPStatement statement=admin.createEPL("select irstream orderId,count(*)  from  `esper54.domain.Order`.win:time(1 sec)");
+        statement.setSubscriber(new DefaultOrderEvent());
+        runtime.sendEvent(new Order(1, "maokitty", 1, 2.0, "mao"));
+        TimeUtil.sleepSec(2);
+    }
+    public static void segment153321(EPAdministrator admin,EPRuntime runtime){
+        EPStatement statement=admin.createEPL("select irstream *  from  `esper54.domain.Order`.win:time(1 sec)");
+        statement.setSubscriber(new MultiOrderEvent());
+        runtime.sendEvent(new Order(1, "maokitty", 1, 2.0, "mao"));
+        runtime.sendEvent(new Order(2, "maokitty2", 2, 4.0, "mao2"));
+        runtime.sendEvent(new Order(3, "maokitty3", 6, 6.0, "mao3"));
+        TimeUtil.sleepSec(2);
     }
 
     /**

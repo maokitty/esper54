@@ -1,4 +1,4 @@
-package esper54.chapter6;
+package esper54.domain;
 
 /**
  * Created by liwangchun on 16/11/15.
@@ -8,6 +8,28 @@ public class Order {
     private String cosumerName;
     private long volume;
     private double price;
+
+    public Order(long orderId, String cosumerName, long volume, double price, String symbol) {
+        this.orderId = orderId;
+        this.cosumerName = cosumerName;
+        this.volume = volume;
+        this.price = price;
+        this.symbol = symbol;
+    }
+
+    public Order() {
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "orderId=" + orderId +
+                ", cosumerName='" + cosumerName + '\'' +
+                ", volume=" + volume +
+                ", price=" + price +
+                ", symbol='" + symbol + '\'' +
+                '}';
+    }
 
     public double getPrice() {
         return price;

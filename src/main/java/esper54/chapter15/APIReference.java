@@ -93,6 +93,12 @@ public class APIReference {
         runtime.sendEvent(new Order(1, "maokitty", 1, 2.0, "mao"));
         TimeUtil.sleepSec(2);
     }
+
+    /**
+     * 每次有事件进来的时候触发一次
+     * @param admin
+     * @param runtime
+     */
     public static void segment153321(EPAdministrator admin,EPRuntime runtime){
         EPStatement statement=admin.createEPL("select irstream *  from  `esper54.domain.Order`.win:time(1 sec)");
         statement.setSubscriber(new MultiOrderEvent());

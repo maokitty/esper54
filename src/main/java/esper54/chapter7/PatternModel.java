@@ -17,12 +17,12 @@ public class PatternModel {
         EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 
 //        segment711(provider.getEPAdministrator(),provider.getEPRuntime());
-//        segment724(provider.getEPAdministrator(), provider.getEPRuntime());
+        segment724(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment726(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment741(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment752(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment753(provider.getEPAdministrator(), provider.getEPRuntime());
-        segment763(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment763(provider.getEPAdministrator(), provider.getEPRuntime());
     }
 
     /**
@@ -42,7 +42,8 @@ public class PatternModel {
     }
 
     /**
-     * @IterableUnbound 必须要添加在statement里面，没有无法拿到，并且只会返回最后一个触发pattern事件的值
+     * 要从pattern中获取数据，必须要添加IterableUnbound
+     * 最终会返回最后一个触发pattern事件的值
      * @param admin
      * @param runtime
      */

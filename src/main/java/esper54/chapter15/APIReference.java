@@ -1,8 +1,12 @@
 package esper54.chapter15;
 
 import com.espertech.esper.client.*;
+import com.espertech.esper.client.time.CurrentTimeEvent;
 import com.espertech.esper.core.service.EPServiceProviderSPI;
 import com.espertech.esper.core.thread.ThreadingService;
+import esper54.Util.CommonListener;
+import esper54.Util.MapSchemaEvent;
+import esper54.Util.PatternCommonListener;
 import esper54.Util.TimeUtil;
 import esper54.domain.Order;
 import esper54.domain.OrderHistory;
@@ -20,7 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class APIReference {
     public static void main(String[] args) {
-        EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
+//        EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment155(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment1535(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment15715(provider);
@@ -28,7 +32,8 @@ public class APIReference {
 //        segment153311(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment153312(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment153314(provider.getEPAdministrator(), provider.getEPRuntime());
-        segment153321(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment153321(provider.getEPAdministrator(), provider.getEPRuntime());
+        segment15101();
     }
 
     /**
@@ -40,9 +45,9 @@ public class APIReference {
         admin.createEPL("create schema OrderEvent as(orderId string,price double)");
         admin.createEPL("create window MyNameWindow.win:time(10) as OrderEvent");
         admin.createEPL("insert into MyNameWindow select * from OrderEvent");
-        Map<String,Object> order0=getOrderEvent("1",1.01);
-        Map<String,Object> order1=getOrderEvent("2",2);
-        Map<String,Object> order2=getOrderEvent("3",2);
+        Map<String,Object> order0= MapSchemaEvent.getOrderEvent("1", 1.01);
+        Map<String,Object> order1=MapSchemaEvent.getOrderEvent("2", 2);
+        Map<String,Object> order2=MapSchemaEvent.getOrderEvent("3", 2);
         runtime.sendEvent(order0,"OrderEvent");
         runtime.sendEvent(order1,"OrderEvent");
         runtime.sendEvent(order2,"OrderEvent");
@@ -166,12 +171,36 @@ public class APIReference {
         }
     }
 
-    private static Map<String,Object> getOrderEvent(String orderId,double price){
-        Map<String,Object> orderMap = new HashMap<String, Object>();
-        orderMap.put("orderId",orderId);
-        orderMap.put("price",price);
-        return orderMap;
+    /**
+     *
+     */
+    public static void segment15101(){
+        Configuration configuration = new Configuration();
+        configuration.getEngineDefaults().getViewResources().setShareViews(false);
+        configuration.getEngineDefaults().getExecution().setAllowIsolatedService(true);
+        //todo 使用默认的provider会出错，uri有啥用？先解决这个
+//        EPServiceProvider provider=EPServiceProviderManager.getProvider("uri",configuration);
+        EPServiceProvider provider=EPServiceProviderManager.getDefaultProvider(configuration);
+        EPServiceProviderIsolated isolatedService = provider.getEPServiceIsolated("myIsolate");
+        long startInMillis = System.currentTimeMillis();
+        isolatedService.getEPRuntime().sendEvent(new CurrentTimeEvent(startInMillis));
+        EPAdministrator admin=provider.getEPAdministrator();
+        EPRuntime runtime=provider.getEPRuntime();
+        admin.createEPL("create schema OrderEvent as(orderId string,price double)");
+        EPStatement notIsolateStatement=admin.createEPL("select * from OrderEvent", "notIsolateStatementName");
+        notIsolateStatement.addListener(new CommonListener());
+        EPStatement toIsolataStatement = admin.getStatement("notIsolateStatementName");
+        toIsolataStatement.addListener(new PatternCommonListener());
+        isolatedService.getEPAdministrator().addStatement(toIsolataStatement);
+        Map<String,Object> order0= MapSchemaEvent.getOrderEvent("1", 1.01);
+        Map<String,Object> order1=MapSchemaEvent.getOrderEvent("2", 2);
+        Map<String,Object> order2=MapSchemaEvent.getOrderEvent("3", 2);
+        runtime.sendEvent(order0,"OrderEvent");
+        runtime.sendEvent(order1, "OrderEvent");
+        runtime.sendEvent(order2, "OrderEvent");
     }
+
+
     private static Map<String,Object> getMyTick(double price){
         Map<String,Object> tick = new HashMap<String, Object>();
         tick.put("price",price);

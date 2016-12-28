@@ -14,4 +14,11 @@ public class MapSchemaEvent {
         stockTicks.put("feed",feed);
         return stockTicks;
     }
+
+    public static Map<String,Object> getOrderEvent(String orderId,double price){
+        Map<String,Object> orderMap = new HashMap<String, Object>();
+        orderMap.put("orderId",orderId);
+        orderMap.put("price",price);
+        return orderMap;
+    }
 }

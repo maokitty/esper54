@@ -1,0 +1,5 @@
+ Esper engine通过EPServiceProviderManager的静态方法获取。可以默认获取或者提供URI来标识不同的engin实例，如果URI已经存在，则不会创建
+新的engine，每个engine是完全独立的，不能共享eventbean
+ initialize方法调用可以重新设置已经启动的statement，之前的statement所有设定都失效；使用destroy必须保证线程已经处理完了他们的工作，更优
+的方案是destroy时以及之后不要使用这个engine;EPServiceStateListener可以用来监控engine 执行initialize之后和destroy之前，方法是addStatementStateListener
+

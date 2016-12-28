@@ -11,4 +11,8 @@
    C:需要statement的结果，实现EPStatement的safeIterator【适于多线程处理】 和 iterator【线程不安全】，有order by语句则按照order by的顺序来，否则按照原窗口来
    3者可以任意组合，如果同时有订阅和注册监听器，那么订阅的类会最先得到结果。
 15.10：isolated service
-   只有隔离内部的statement可见某些事件
+   只有隔离内部的statement可见某些事件,默认情况下isolated不可用,可以用于以下场景
+    1：不会丢失statement状态的 暂停statement
+    2:对某些statement单独提供时间控制,比如模拟，判断到达顺序，计算到达时间，回归测试
+    3：事件重放。捕捉历史事件
+   EPServiceProviderIsolated的destroy方法会移除所有的isolate服务，使之使用引擎的时间，移除isolated statement，engin保证原有事件的时间和‘时间日历’保持不变

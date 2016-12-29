@@ -1,9 +1,9 @@
-package esper54.chapter6;
+package esper54.domain;
 
 /**
  * Created by liwangchun on 16/10/31.
  */
-public class StockTick {
+public class News {
     public String getSymbol() {
         return symbol;
     }
@@ -14,13 +14,13 @@ public class StockTick {
 
     private String symbol;
 
-    public double getPrice() {
-        return price;
+    public String getText() {
+        return text;
     }
 
-    public void setPrice(double price) {
-        this.price = price;
+    public void setText(String text) {
+        this.text = text;
     }
 
-    private double price;
+    private String text;
 }

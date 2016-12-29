@@ -3,6 +3,7 @@ package esper54.chapter6;
 import com.espertech.esper.client.*;
 import esper54.Util.*;
 import esper54.domain.Order;
+import esper54.domain.StockTick;
 
 import java.util.HashMap;
 import java.util.Map;

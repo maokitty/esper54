@@ -1,11 +1,11 @@
 package esper54.chapter5;
 
 import com.espertech.esper.client.*;
-import esper54.Util.CommonListener;
-import esper54.Util.SchemaCommonListener;
-import esper54.Util.TimeUtil;
+import esper54.Util.*;
+import esper54.domain.*;
+import esper54.domain.Process;
 
-import java.util.HashMap;
+import java.lang.annotation.Annotation;
 import java.util.Map;
 
 /**
@@ -16,9 +16,132 @@ public class ClauseModel {
         EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment515(provider.getEPAdministrator(),provider.getEPRuntime());
 //        segment517(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment5271(provider.getEPAdministrator(),provider.getEPRuntime(), esper54.domain.Process.class.getName());
 //        segment529(provider.getEPAdministrator(), provider.getEPRuntime());
-        segment536(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment535(provider.getEPAdministrator(), provider.getEPRuntime(), StockTick.class.getName());
+//        segment536(provider.getEPAdministrator(), provider.getEPRuntime());
+//        segment539(provider.getEPAdministrator(), provider.getEPRuntime(), StockTick.class.getName());
     }
+
+    /**
+     * todo 不明白这个注解有什么用
+     * @param admin
+     * @param runtime
+     * @param eventName
+     */
+
+    public static void segment5271(EPAdministrator admin,EPRuntime runtime,String eventName){
+        admin.getConfiguration().addAnnotationImport("esper54.chapter5.ProcessMonitor");
+        StringBuilder pBuilder = new StringBuilder("@ProcessMonitor(processName=\"aaa\",isLongRunning=true,subProcessIds={1,2,3}) select irstream count(*),processName from ");
+        pBuilder.append(eventName);
+        pBuilder.append(" (processId in (1,2,3)).win:time(5 sec)");
+        String processEvent = pBuilder.toString();
+        EPStatement statement = admin.createEPL(processEvent);
+        for (Annotation a:statement.getAnnotations()){
+            System.out.println(a.toString());
+        }
+        statement.addListener(new SelfDefineAnnotionListener());
+        Process event0 = new Process();
+        event0.setIsLongRunning(false);
+        event0.setProcessId(0);
+        event0.setProcessName("maokitty0");
+        runtime.sendEvent(event0);
+        Process event1 = new Process();
+        event1.setIsLongRunning(true);
+        event1.setProcessId(1);
+        event1.setProcessName("maokitty1");
+        runtime.sendEvent(event1);
+        Process event2 = new Process();
+        event2.setIsLongRunning(false);
+        event2.setProcessId(2);
+        event2.setProcessName("maokitty2");
+        runtime.sendEvent(event2);
+        Process event3 = new Process();
+        event3.setIsLongRunning(true);
+        event3.setProcessId(3);
+        event3.setProcessName("maokitty3");
+        runtime.sendEvent(event3);
+        Process event4 = new Process();
+        event4.setIsLongRunning(true);
+        event4.setProcessId(4);
+        event4.setProcessName("maokitty4");
+        runtime.sendEvent(event4);
+    }
+
+    /**
+     * 形如 select irstream distinct tick.symbol as symbol, tick.price price from StockTick.win:time(4) as tick</p>
+     * 1:distinct必须在select之后出现,调换symbol和price后会编译出错</p>
+     * 2:distinct在这种场景下并不生效,这里每次只输出一个，只有在有两个或之上的输出事件才会触发去重,改为time_batch生效</p>
+     *
+     * @param admin
+     * @param runtime
+     * @param eventName
+     */
+    public static void segment539(EPAdministrator admin,EPRuntime runtime,String eventName){
+        StringBuilder pBuilder = new StringBuilder("select irstream distinct tick.symbol as symbol, tick.price price from ");
+        pBuilder.append(eventName);
+//        pBuilder.append(".win:time(4) as tick"); //观察time_batch与此的区别
+        pBuilder.append(".win:time_batch(4 sec) as tick");
+        String processEvent = pBuilder.toString();
+        EPStatement statement = admin.createEPL(processEvent);
+        statement.addListener(new CommonListener());
+        StockTick tick0 = new StockTick();
+        tick0.setPrice(1);
+        tick0.setSymbol("maokitty0");
+        runtime.sendEvent(tick0);
+        StockTick tick1 = new StockTick();
+        tick1.setPrice(2);
+        tick1.setSymbol("maokitty1");
+        runtime.sendEvent(tick1);
+        runtime.sendEvent(tick1);
+        runtime.sendEvent(tick1);
+        TimeUtil.sleepSec(5);
+    }
+
+    /**
+     * 形如 select irstream tick.price price,tick.symbol as symbol,news.text as text from Stock.win:time(4)  as tick,News.win:time(4) as news where tick.symbol=news.symbol</p>
+     * 1：对时间窗口内的数据做聚合,可有各自的时间窗口长度[添加tick失效后再次发送并改变joinEvent长度为10 观察]</p>
+     * 2：聚合的只有一种时间传入不会触发listener[注释掉 send news观察]</p>
+     * @param admin
+     * @param runtime
+     * @param eventName
+     */
+    public static void segment535(EPAdministrator admin,EPRuntime runtime,String eventName){
+        String joinEvent = News.class.getName();
+        StringBuilder pBuilder = new StringBuilder("select irstream tick.price price,tick.symbol as symbol,news.text as text from ");
+        pBuilder.append(eventName);
+        pBuilder.append(".win:time(4) as tick,");
+        pBuilder.append(joinEvent);
+        pBuilder.append(".win:time(4) as news where tick.symbol=news.symbol");
+        String processEvent = pBuilder.toString();
+        EPStatement statement = admin.createEPL(processEvent);
+        statement.addListener(new CommonListener());
+        StockTick tick0 = new StockTick();
+        tick0.setPrice(1);
+        tick0.setSymbol("maokitty0");
+        runtime.sendEvent(tick0);
+        StockTick tick1 = new StockTick();
+        tick1.setPrice(2);
+        tick1.setSymbol("maokitty1");
+        runtime.sendEvent(tick1);
+//        sleep5Sec(); //观察只有news事件
+        News news0 = new News();
+        news0.setSymbol("maokitty0");
+        news0.setText("maokitty0的新闻");
+        runtime.sendEvent(news0);
+        News news1 = new News();
+        news1.setSymbol("maokitty0");
+        news1.setText("maokitty0的另一条新闻");
+        runtime.sendEvent(news1);
+        TimeUtil.sleepSec(5);
+        News news2 = new News();
+        news2.setSymbol("maokitty0");
+        news2.setText("maokitty05s后的一条新闻");
+        runtime.sendEvent(news2);
+//        runtime.sendEvent(tick0);//观察时间窗口长度不一致
+        TimeUtil.sleepSec(5);
+    }
+
 
     /**
      * EPL中schema和event type具有相同的含义
@@ -53,8 +176,8 @@ public class ClauseModel {
         admin.createEPL("select count(*) from TickEvent output every var_output_rate seconds").addListener(new CommonListener());
         admin.createEPL("create schema UpdateEvent()");
         admin.createEPL("on UpdateEvent set var_output_rate = 3");
-        Map<String,Object> u0=getUpdateEvent();
-        Map<String,Object> t0 = getTickEvent("maokitty1", 1.0);
+        Map<String,Object> u0=MapSchemaEvent.getUpdateEvent();
+        Map<String,Object> t0 = MapSchemaEvent.getTickEvent("maokitty1", 1.0);
         runtime.sendEvent(t0, "TickEvent");
         runtime.sendEvent(u0, "UpdateEvent");
         TimeUtil.sleepSec(21);
@@ -70,9 +193,9 @@ public class ClauseModel {
     public static void segment529(EPAdministrator admin,EPRuntime runtime){
         admin.createEPL("create schema MarketDataEvent (buy double,sell double)");
         admin.createEPL("expression midPrice { x->(buy+sell)/2 } select midPrice(*) from MarketDataEvent").addListener(new CommonListener());
-        Map<String,Object> obj0=getMarketDataEvent(1.0, 2.0);
-        Map<String,Object> obj1=getMarketDataEvent(3.0, 2.0);
-        runtime.sendEvent(obj0,"MarketDataEvent");
+        Map<String,Object> obj0= MapSchemaEvent.getMarketDataEvent(1.0, 2.0);
+        Map<String,Object> obj1=MapSchemaEvent.getMarketDataEvent(3.0, 2.0);
+        runtime.sendEvent(obj0, "MarketDataEvent");
         runtime.sendEvent(obj1, "MarketDataEvent");
     }
 
@@ -88,37 +211,13 @@ public class ClauseModel {
         admin.createEPL("create window StockTickAndNews.win:time(3 sec) (tick StockTick,news News)");
         admin.createEPL("insert into StockTickAndNews select tick,news from pattern[every tick=StockTick -> news=News(symbol=tick.symbol)]");
         admin.createEPL("select tick,news from StockTickAndNews").addListener(new SchemaCommonListener());
-        Map<String,Object> obj00=getTickEvent("maokitty",12);
-        Map<String,Object> obj01=getNewsEvent("maokitty","my text");
-        Map<String,Object> obj10=getTickEvent("maokitty",13);
-        Map<String,Object> obj11=getNewsEvent("maokitty2", "my text 13");
+        Map<String,Object> obj00=MapSchemaEvent.getTickEvent("maokitty", 12);
+        Map<String,Object> obj01=MapSchemaEvent.getNewsEvent("maokitty", "my text");
+        Map<String,Object> obj10=MapSchemaEvent.getTickEvent("maokitty", 13);
+        Map<String,Object> obj11=MapSchemaEvent.getNewsEvent("maokitty2", "my text 13");
         runtime.sendEvent(obj00,"StockTick");
         runtime.sendEvent(obj01,"News");
         runtime.sendEvent(obj10,"StockTick");
         runtime.sendEvent(obj11,"News");
-    }
-
-    private static Map<String,Object> getTickEvent(String symbol,double price){
-        Map<String,Object> tick = new HashMap<String, Object>();
-        tick.put("symbol", symbol);
-        tick.put("price", price);
-        return tick;
-    }
-    private static Map<String,Object> getMarketDataEvent(double buy,double sell){
-        Map<String,Object> obj = new HashMap<String, Object>();
-        obj.put("buy",buy);
-        obj.put("sell",sell);
-        return obj;
-    }
-    private static Map<String,Object> getNewsEvent(String symbol,String text){
-        Map<String,Object> obj = new HashMap<String, Object>();
-        obj.put("symbol",symbol);
-        obj.put("text",text);
-        return obj;
-    }
-
-    private static Map<String,Object> getUpdateEvent(){
-        Map<String,Object> update = new HashMap<String, Object>();
-        return update;
     }
 }

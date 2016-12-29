@@ -1,9 +1,9 @@
-package esper54.chapter5;
+package esper54.domain;
 
 /**
  * Created by liwangchun on 16/10/31.
  */
-public class ProcessEvent {
+public class Process {
     public String getProcessName() {
         return processName;
     }

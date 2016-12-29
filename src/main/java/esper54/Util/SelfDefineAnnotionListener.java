@@ -1,4 +1,4 @@
-package esper54.chapter5;
+package esper54.Util;
 
 import com.espertech.esper.client.EventBean;
 import com.espertech.esper.client.EventType;

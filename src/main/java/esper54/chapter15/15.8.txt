@@ -1,0 +1,10 @@
+时间控制
+默认使用jvm的时间，另外能通过外部在一个engin或者isolated service内部实现时间控制
+禁用默认时间使用外部时间的方式有两种：1，通过config api控制，2，运行时send TimerControlEvent
+使用外部时间，那么send的时间（CurrentTimeEvent）必须大于等于之前的时间(getNextScheduledTime可获取最小的时间值)，不想每次send可使用
+CurrentTimeSpanEvent，同时可设定每次时间往前推进的间隔
+
+esper的数据窗口、pattern和output时间间隔只做到是毫秒级别，默认内部时间器触发频率是100ms。通过
+config.getEngineDefaults().getTimeSource().
+      setTimeSourceType(ConfigurationEngineDefaults.TimeSourceType.NANO);
+可以将时间设置在纳秒的级别，这是jvm级别的设定，意味着同一个jvm的所有时间（esper的内部时间）都在纳秒

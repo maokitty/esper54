@@ -2,18 +2,20 @@ package esper54.chapter15;
 
 import com.espertech.esper.client.*;
 import com.espertech.esper.client.time.CurrentTimeEvent;
+import com.espertech.esper.client.time.CurrentTimeSpanEvent;
 import com.espertech.esper.core.service.EPServiceProviderSPI;
 import com.espertech.esper.core.thread.ThreadingService;
-import esper54.Util.CommonListener;
-import esper54.Util.MapSchemaEvent;
-import esper54.Util.PatternCommonListener;
-import esper54.Util.TimeUtil;
+import esper54.Util.*;
 import esper54.domain.Order;
 import esper54.domain.OrderHistory;
 import esper54.subscriber.DefaultOrderEvent;
 import esper54.subscriber.MultiOrderEvent;
 import esper54.subscriber.OrderEvent;
 
+import java.sql.Time;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -24,7 +26,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class APIReference {
     public static void main(String[] args) {
-//        EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
+        EPServiceProvider provider = EPServiceProviderManager.getDefaultProvider();
 //        segment155(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment1535(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment15715(provider);
@@ -34,6 +36,7 @@ public class APIReference {
 //        segment153314(provider.getEPAdministrator(), provider.getEPRuntime());
 //        segment153321(provider.getEPAdministrator(), provider.getEPRuntime());
         segment15101();
+//        segment1581();
     }
 
     /**
@@ -172,32 +175,67 @@ public class APIReference {
     }
 
     /**
-     *
+     * select current_timestamp() as ct from pattern[every timer:interval(2 seconds)] 含义
+     * 每2秒钟输出一次timer的时间
+     * runtime.sendEvent(new CurrentTimeSpanEvent(startTime.getTime() + 10*1000,4000)) 含义
+     * 从起始时间开始，结束在起始时间 10s其之后，每次的时间间隔是4s,没有提供时间间隔则按照statement设置的来
+     */
+    public static void segment1581(){
+        Configuration configuration = new Configuration();
+        configuration.getEngineDefaults().getThreading().setInternalTimerEnabled(false);
+        EPServiceProvider provider=EPServiceProviderManager.getDefaultProvider(configuration);
+        provider.initialize();
+        SimpleDateFormat format = new SimpleDateFormat("yyyy MM dd HH:mm:ss SSS");
+        Date startTime = null;
+        try {
+            startTime = format.parse("2010 01 01 00:00:00 000");
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        EPRuntime runtime = provider.getEPRuntime();
+        runtime.sendEvent(new CurrentTimeEvent(startTime.getTime()));
+        EPStatement stmt = provider.getEPAdministrator().createEPL("select current_timestamp() as ct " +
+                "from pattern[every timer:interval(2 seconds)]");
+        stmt.addListener(new CommonListener());
+        runtime.sendEvent(new CurrentTimeSpanEvent(startTime.getTime() + 10*1000,4000));
+    }
+
+    /**
+     * initialize会重新设置provider
+     * 直接将statement(名字叫stat)添加到isolate会使外部stat事件暂停处理。stat再次send不会触发listener
+     * 将statement迁移到isolate的时候，在所有线程处理send完事件之前，无法确认是都会被isolate的listener监听到
+     * todo 从isolate service中移除statement，立即在原statement执行发送事件，会出现 java.lang.StackOverflowError，移除之前则没有问题
      */
     public static void segment15101(){
         Configuration configuration = new Configuration();
         configuration.getEngineDefaults().getViewResources().setShareViews(false);
         configuration.getEngineDefaults().getExecution().setAllowIsolatedService(true);
-        //todo 使用默认的provider会出错，uri有啥用？先解决这个
-//        EPServiceProvider provider=EPServiceProviderManager.getProvider("uri",configuration);
+        configuration.getEngineDefaults().getThreading().setInternalTimerEnabled(false);
         EPServiceProvider provider=EPServiceProviderManager.getDefaultProvider(configuration);
-        EPServiceProviderIsolated isolatedService = provider.getEPServiceIsolated("myIsolate");
-        long startInMillis = System.currentTimeMillis();
-        isolatedService.getEPRuntime().sendEvent(new CurrentTimeEvent(startInMillis));
+        provider.addServiceStateListener(new EngineListener());
+        provider.initialize();
+        //非isolate runtime
         EPAdministrator admin=provider.getEPAdministrator();
-        EPRuntime runtime=provider.getEPRuntime();
         admin.createEPL("create schema OrderEvent as(orderId string,price double)");
-        EPStatement notIsolateStatement=admin.createEPL("select * from OrderEvent", "notIsolateStatementName");
-        notIsolateStatement.addListener(new CommonListener());
+        admin.createEPL("select count(*),current_timestamp() from pattern[every a=OrderEvent where timer:within(2 seconds)]", "notIsolateStatementName").addListener(new PatternCommonListener());
+        EPRuntime runtime=provider.getEPRuntime();
         EPStatement toIsolataStatement = admin.getStatement("notIsolateStatementName");
-        toIsolataStatement.addListener(new PatternCommonListener());
+        EPServiceProviderIsolated isolatedService = provider.getEPServiceIsolated("myIsolate");
+         long startInMillis = System.currentTimeMillis();
+        //isolate启用外部时间
+        EPRuntimeIsolated isoRuntime = isolatedService.getEPRuntime();
+        //startInMills可以自己定
+        isoRuntime.sendEvent(new CurrentTimeEvent(startInMillis));
+        //isolate只运行10秒钟
+        isoRuntime.sendEvent(new CurrentTimeSpanEvent(startInMillis + 10 * 1000));
         isolatedService.getEPAdministrator().addStatement(toIsolataStatement);
         Map<String,Object> order0= MapSchemaEvent.getOrderEvent("1", 1.01);
         Map<String,Object> order1=MapSchemaEvent.getOrderEvent("2", 2);
         Map<String,Object> order2=MapSchemaEvent.getOrderEvent("3", 2);
-        runtime.sendEvent(order0,"OrderEvent");
+        isoRuntime.sendEvent(order0, "OrderEvent");
+        isoRuntime.sendEvent(order2, "OrderEvent");
         runtime.sendEvent(order1, "OrderEvent");
-        runtime.sendEvent(order2, "OrderEvent");
+        isolatedService.getEPAdministrator().removeStatement(toIsolataStatement);
     }
 
 
